@@ -171,6 +171,11 @@ jobs:
           sudo systemctl start odoo18.service
           sudo systemctl enable odoo18.service
 
+      - name: Restart Odoo with pm2
+        run: |
+          pm2 restart "Odoo Setup and Update" || pm2 start /opt/odoo18/venv/bin/python3 --name "Odoo Setup and Update" -- /opt/odoo18/odoo-bin -c /etc/odoo18.conf
+
+
       # Optionally, check Odoo service status
       - name: Check Odoo service status
         run: |
