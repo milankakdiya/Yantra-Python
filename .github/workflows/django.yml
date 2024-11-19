@@ -1,10 +1,12 @@
+name: Odoo Setup and Update
+
 on:
   push:
     branches:
       - main  # Trigger the workflow when there is a push to the main branch
   pull_request:
     branches:
-      - main  # Trigger the workflow when there is a PR to the main branch 
+      - main  # Trigger the workflow when there is a PR to the main branch
 
 jobs:
   setup:
@@ -45,7 +47,7 @@ jobs:
           sudo dpkg -i wkhtmltox_0.12.5-1.bionic_amd64.deb
           sudo apt-get --fix-broken install -y
 
-      # Create the Odoo user and set up the directory structure
+      # Create Odoo user and set up directories
       - name: Create Odoo user and set up directories
         run: |
           # Check if the user already exists
@@ -58,7 +60,15 @@ jobs:
           # Check if the database exists, if not create it
           DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='odoo18'")
           if [ "$DB_EXISTS" != "1" ]; then
-            sudo su - postgres -c "createuser --createdb --username postgres --no-createrole --superuser --pwprompt odoo18"
+            # Check if the user role exists before creating it
+            ROLE_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='odoo18'")
+            if [ "$ROLE_EXISTS" != "1" ]; then
+              sudo su - postgres -c "createuser --createdb --username postgres --no-createrole --superuser --pwprompt odoo18"
+            else
+              echo "Role odoo18 already exists, skipping role creation."
+            fi
+
+            # Create the database with the correct owner
             sudo su - postgres -c "createdb --username postgres --owner odoo18 odoo18"
             echo "Database 'odoo18' created."
           else
@@ -72,14 +82,17 @@ jobs:
       # Set up Python virtual environment
       - name: Set up Python virtual environment
         run: |
-          sudo python3 -m venv /opt/odoo18/venv
-          cd /opt/odoo18/
-          sudo chown -R odoo18:odoo18 /opt/odoo18/venv  # Ensure proper ownership
-          source venv/bin/activate
-          pip install -r requirements.txt
-          deactivate
+          if [ ! -d "/opt/odoo18/venv" ]; then
+            sudo python3 -m venv /opt/odoo18/venv
+            sudo chown -R odoo18:odoo18 /opt/odoo18/venv  # Ensure proper ownership
+            source /opt/odoo18/venv/bin/activate
+            pip install -r /opt/odoo18/requirements.txt
+            deactivate
+          else
+            echo "Virtual environment already exists, skipping creation and dependency installation."
+          fi
 
-      # Copy Odoo config file and adjust settings
+      # Copy and configure Odoo config
       - name: Copy and configure Odoo config
         run: |
           sudo cp /opt/odoo18/debian/odoo.conf /etc/odoo18.conf
@@ -87,15 +100,15 @@ jobs:
           sudo sed -i 's/^; db_password = False$/db_password = 123456/' /etc/odoo18.conf
           sudo sed -i 's/^addons_path = /opt\/odoo18\/addons/ &/' /etc/odoo18.conf
 
-      # Set proper permissions for Odoo config
+      # Set permissions for Odoo config file
       - name: Set permissions for Odoo config file
         run: |
           sudo chown odoo18: /etc/odoo18.conf
           sudo chmod 640 /etc/odoo18.conf
-          sudo mkdir /var/log/odoo
+          sudo mkdir -p /var/log/odoo
           sudo chown odoo18:root /var/log/odoo
 
-      # Set up the Odoo service
+      # Create and enable Odoo systemd service
       - name: Create and enable Odoo systemd service
         run: |
           sudo bash -c "cat <<EOF > /etc/systemd/system/odoo18.service
@@ -115,7 +128,7 @@ jobs:
           sudo systemctl start odoo18.service
           sudo systemctl enable odoo18.service
 
-      # Optionally, you can add a step to check if Odoo is running
+      # Optionally, check Odoo service status
       - name: Check Odoo service status
         run: |
           sudo systemctl status odoo18.service
