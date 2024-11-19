@@ -6,7 +6,7 @@ on:
       - main  # Trigger the workflow when there is a push to the main branch
   pull_request:
     branches:
-      - main  # Trigger the workflow when there is a PR to the main branch
+      - main  # Trigger the workflow when there is a PR to the main branch 
 
 jobs:
   setup:
