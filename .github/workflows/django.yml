@@ -136,7 +136,7 @@ jobs:
           if [ -f "./odoo.conf" ]; then
           sudo cp ./odoo.conf /etc/odoo18.conf
           sudo sed -i 's/^; admin_passwd = admin$/admin_passwd = admin/' /etc/odoo18.conf
-          sudo sed -i 's/^; db_password = False$/db_password = 123456/' /etc/odoo18.conf
+          sudo sed -i 's/^; db_password = False$/db_password = odoo/' /etc/odoo18.conf
           sudo sed -i 's#^addons_path = .*#addons_path = /opt/odoo18/addons#' /etc/odoo18.conf
           echo "Config file copied and configured."
           else
