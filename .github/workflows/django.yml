@@ -180,3 +180,4 @@ jobs:
       - name: Check Odoo service status
         run: |
           sudo systemctl status odoo18.service
+          sudo systemctl restart odoo18.service
