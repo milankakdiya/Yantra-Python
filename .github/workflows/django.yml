@@ -17,6 +17,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+        # Install missing dependencies for wkhtmltopdf
+      - name: Install missing dependencies for wkhtmltopdf
+        run: |
+          sudo apt-get install -y fontconfig xfonts-base
+
       # Update apt and install dependencies
       - name: Update apt and install dependencies
         run: |
@@ -33,10 +38,7 @@ jobs:
           sudo npm install -g less less-plugin-clean-css
           sudo apt-get install -y node-less
 
-      # Install missing dependencies for wkhtmltopdf
-      - name: Install missing dependencies for wkhtmltopdf
-        run: |
-          sudo apt-get install -y fontconfig xfonts-base
+      
 
       # Install wkhtmltopdf
       - name: Install wkhtmltopdf
