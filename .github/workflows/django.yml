@@ -88,16 +88,20 @@ jobs:
 
           # Check if requirements.txt is present in the root directory
           if [ ! -f "requirements.txt" ]; then
-          echo "requirements.txt not found in the repository root. Please check your repo structure."
-          exit 1
+            echo "requirements.txt not found in the repository root. Please check your repo structure."
+            exit 1
           fi
 
           # Set up virtual environment if it doesn't exist
           if [ ! -d "/opt/odoo18/venv" ]; then
-          sudo python3 -m venv /opt/odoo18/venv
-          sudo chown -R odoo18:odoo18 /opt/odoo18/venv  # Ensure proper ownership
-          echo "Virtual environment created."
+            sudo python3 -m venv /opt/odoo18/venv
+            sudo chown -R odoo18:odoo18 /opt/odoo18/venv  # Ensure proper ownership
+            echo "Virtual environment created."
           fi
+
+          # Fix permissions for the virtual environment
+          sudo chown -R odoo18:odoo18 /opt/odoo18/venv
+          sudo chmod -R 755 /opt/odoo18/venv
 
           # Copy the requirements.txt to the right location if it's not already there
           sudo cp ./requirements.txt /opt/odoo18/requirements.txt
