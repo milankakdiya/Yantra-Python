@@ -1,4 +1,4 @@
-name: Odoo Setup and Update 
+name: Odoo Setup and Update
 
 on:
   push:
