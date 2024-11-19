@@ -92,8 +92,9 @@ jobs:
           exit 1
           fi
 
-          # Set permissions on the /opt/odoo18 directory to ensure the user can access it
+          # Set permissions on /opt/odoo18 to ensure the user can access it
           sudo chown -R odoo18:odoo18 /opt/odoo18
+          sudo chmod -R 775 /opt/odoo18
 
           # Set up virtual environment if it doesn't exist
           if [ ! -d "/opt/odoo18/venv" ]; then
@@ -104,18 +105,15 @@ jobs:
 
           # Fix permissions for the virtual environment
           sudo chown -R odoo18:odoo18 /opt/odoo18/venv
-          sudo chmod -R 755 /opt/odoo18/venv
+          sudo chmod -R 775 /opt/odoo18/venv
 
           # Copy the requirements.txt to the right location if it's not already there
           sudo cp ./requirements.txt /opt/odoo18/requirements.txt
           echo "requirements.txt copied to /opt/odoo18."
 
-          # Fix permissions for the virtual environment
-          sudo chown -R odoo18:odoo18 /opt/odoo18/venv
-          sudo chmod -R 755 /opt/odoo18/venv
           # Activate virtual environment and install dependencies
           source /opt/odoo18/venv/bin/activate
-          pip install -r /opt/odoo18/requirements.txt
+          pip install --no-cache-dir -r /opt/odoo18/requirements.txt
           deactivate
           echo "Dependencies installed."
 
