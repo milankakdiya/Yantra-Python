@@ -110,6 +110,9 @@ jobs:
           sudo cp ./requirements.txt /opt/odoo18/requirements.txt
           echo "requirements.txt copied to /opt/odoo18."
 
+          # Fix permissions for the virtual environment
+          sudo chown -R odoo18:odoo18 /opt/odoo18/venv
+          sudo chmod -R 755 /opt/odoo18/venv
           # Activate virtual environment and install dependencies
           source /opt/odoo18/venv/bin/activate
           pip install -r /opt/odoo18/requirements.txt
