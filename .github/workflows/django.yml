@@ -27,7 +27,9 @@ jobs:
       # Set up Node.js and install necessary npm packages
       - name: Install Node.js and npm packages
         run: |
+          if [ ! -e /usr/bin/node ]; then
           sudo ln -s /usr/bin/nodejs /usr/bin/node
+          fi
           sudo npm install -g less less-plugin-clean-css
           sudo apt-get install -y node-less
 
