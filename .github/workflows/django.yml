@@ -113,9 +113,9 @@ jobs:
 
           # Activate virtual environment and install dependencies
           source /opt/odoo18/venv/bin/activate
-          pip install --no-cache-dir -r /opt/odoo18/requirements.txt
-          deactivate
+          sudo -u odoo18 /opt/odoo18/venv/bin/pip install --no-cache-dir -r /opt/odoo18/requirements.txt
           echo "Dependencies installed."
+          
 
       # Copy and configure Odoo config file if it exists
       - name: Copy and configure Odoo config
