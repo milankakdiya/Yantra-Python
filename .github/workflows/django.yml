@@ -81,9 +81,14 @@ jobs:
 
       - name: Copy Odoo code to /opt/odoo18
         run: |
-          sudo cp -r ./ /opt/odoo18
-          sudo chown -R odoo18:odoo18 /opt/odoo18
-          sudo chmod -R 755 /opt/odoo18
+            # Check if /opt/odoo18 exists and delete it
+            sudo rm -rf /opt/odoo18
+            # Now copy the new Odoo code
+            sudo cp -r ./ /opt/odoo18
+            # Set ownership and permissions
+            sudo chown -R odoo18:odoo18 /opt/odoo18
+            sudo chmod -R 755 /opt/odoo18
+
 
 
       # Set up Python virtual environment
