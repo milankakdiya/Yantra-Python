@@ -17,11 +17,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-        # Install missing dependencies for wkhtmltopdf
-      - name: Install missing dependencies for wkhtmltopdf
-        run: |
-          sudo apt-get install -y fontconfig xfonts-base
-
       # Update apt and install dependencies
       - name: Update apt and install dependencies
         run: |
@@ -38,7 +33,10 @@ jobs:
           sudo npm install -g less less-plugin-clean-css
           sudo apt-get install -y node-less
 
-      
+      # Install missing dependencies for wkhtmltopdf
+      - name: Install missing dependencies for wkhtmltopdf
+        run: |
+          sudo apt-get install -y fontconfig xfonts-base
 
       # Install wkhtmltopdf
       - name: Install wkhtmltopdf
@@ -54,12 +52,17 @@ jobs:
         run: |
           sudo adduser --system --home=/opt/odoo18 --group odoo18
           sudo su - postgres -c "createuser --createdb --username postgres --no-createrole --superuser --pwprompt odoo18"
+          
+          # Ensure the odoo18 user owns the directory and has the correct permissions
+          sudo chown -R odoo18:odoo18 /opt/odoo18
+          sudo chmod -R 755 /opt/odoo18
 
       # Set up Python virtual environment
       - name: Set up Python virtual environment
         run: |
           sudo python3 -m venv /opt/odoo18/venv
           cd /opt/odoo18/
+          sudo chown -R odoo18:odoo18 /opt/odoo18/venv  # Ensure proper ownership
           source venv/bin/activate
           pip install -r requirements.txt
           deactivate
