@@ -120,15 +120,15 @@ jobs:
       # Copy and configure Odoo config file if it exists
       - name: Copy and configure Odoo config
         run: |
-          # Check if the odoo.conf file exists
-          if [ -f "/opt/odoo18/debian/odoo.conf" ]; then
-            sudo cp /opt/odoo18/debian/odoo.conf /etc/odoo18.conf
-            sudo sed -i 's/^; admin_passwd = admin$/admin_passwd = admin/' /etc/odoo18.conf
-            sudo sed -i 's/^; db_password = False$/db_password = 123456/' /etc/odoo18.conf
-            sudo sed -i 's/^addons_path = /opt\/odoo18\/addons/ &/' /etc/odoo18.conf
-            echo "Config file copied and configured."
+          # Check if the odoo.conf file exists in the root directory
+          if [ -f "./odoo.conf" ]; then
+          sudo cp ./odoo.conf /etc/odoo18.conf
+          sudo sed -i 's/^; admin_passwd = admin$/admin_passwd = admin/' /etc/odoo18.conf
+          sudo sed -i 's/^; db_password = False$/db_password = 123456/' /etc/odoo18.conf
+          sudo sed -i 's/^addons_path = /opt\/odoo18\/addons/ &/' /etc/odoo18.conf
+          echo "Config file copied and configured."
           else
-            echo "Config file /opt/odoo18/debian/odoo.conf not found, skipping copy."
+          echo "Config file ./odoo.conf not found, skipping copy."
           fi
 
       # Set permissions for Odoo config file
