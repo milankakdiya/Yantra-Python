@@ -80,25 +80,33 @@ jobs:
           sudo chmod -R 755 /opt/odoo18
 
       # Set up Python virtual environment
-      - name: Set up Python virtual environment
+      - name: Set up Python virtual environment and install dependencies
         run: |
           if [ ! -d "/opt/odoo18/venv" ]; then
             sudo python3 -m venv /opt/odoo18/venv
             sudo chown -R odoo18:odoo18 /opt/odoo18/venv  # Ensure proper ownership
-            source /opt/odoo18/venv/bin/activate
-            pip install -r /opt/odoo18/requirements.txt
-            deactivate
-          else
-            echo "Virtual environment already exists, skipping creation and dependency installation."
+            echo "Virtual environment created."
           fi
+          
+          # Activate virtual environment and install requirements
+          source /opt/odoo18/venv/bin/activate
+          pip install -r /opt/odoo18/requirements.txt
+          deactivate
+          echo "Dependencies installed."
 
-      # Copy and configure Odoo config
+      # Copy and configure Odoo config file if it exists
       - name: Copy and configure Odoo config
         run: |
-          sudo cp /opt/odoo18/debian/odoo.conf /etc/odoo18.conf
-          sudo sed -i 's/^; admin_passwd = admin$/admin_passwd = admin/' /etc/odoo18.conf
-          sudo sed -i 's/^; db_password = False$/db_password = 123456/' /etc/odoo18.conf
-          sudo sed -i 's/^addons_path = /opt\/odoo18\/addons/ &/' /etc/odoo18.conf
+          # Check if the odoo.conf file exists
+          if [ -f "/opt/odoo18/debian/odoo.conf" ]; then
+            sudo cp /opt/odoo18/debian/odoo.conf /etc/odoo18.conf
+            sudo sed -i 's/^; admin_passwd = admin$/admin_passwd = admin/' /etc/odoo18.conf
+            sudo sed -i 's/^; db_password = False$/db_password = 123456/' /etc/odoo18.conf
+            sudo sed -i 's/^addons_path = /opt\/odoo18\/addons/ &/' /etc/odoo18.conf
+            echo "Config file copied and configured."
+          else
+            echo "Config file /opt/odoo18/debian/odoo.conf not found, skipping copy."
+          fi
 
       # Set permissions for Odoo config file
       - name: Set permissions for Odoo config file
