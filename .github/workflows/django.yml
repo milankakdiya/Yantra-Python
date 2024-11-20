@@ -1,0 +1,183 @@
+name: Odoo Setup and Update
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow when there is a push to the main branch
+  pull_request:
+    branches:
+      - main  # Trigger the workflow when there is a PR to the main branch
+
+jobs:
+  setup:
+    runs-on: self-hosted  # This will use your self-hosted runner
+    
+    steps:
+      # Checkout the code from the repository (this will be done by your self-hosted runner)
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Update apt and install dependencies
+      - name: Update apt and install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get upgrade -y
+          sudo apt-get install -y python3-pip python3-dev libxml2-dev libxslt1-dev zlib1g-dev libsasl2-dev libldap2-dev build-essential libssl-dev libffi-dev libmysqlclient-dev libjpeg-dev libpq-dev libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev npm postgresql git python3-venv
+
+      # Set up Node.js and install necessary npm packages
+      - name: Install Node.js and npm packages
+        run: |
+          if [ ! -e /usr/bin/node ]; then
+            sudo ln -s /usr/bin/nodejs /usr/bin/node
+          fi
+          sudo npm install -g less less-plugin-clean-css
+          sudo apt-get install -y node-less
+
+      # Install missing dependencies for wkhtmltopdf
+      - name: Install missing dependencies for wkhtmltopdf
+        run: |
+          sudo apt-get install -y fontconfig xfonts-base
+
+      # Install wkhtmltopdf
+      - name: Install wkhtmltopdf
+        run: |
+          sudo wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.bionic_amd64.deb
+          sudo wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+          sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+          sudo dpkg -i wkhtmltox_0.12.5-1.bionic_amd64.deb
+          sudo apt-get --fix-broken install -y
+
+      # Create Odoo user and set up directories
+      - name: Create Odoo user and set up directories
+        run: |
+          # Check if the user already exists
+          if ! id -u odoo18 >/dev/null 2>&1; then
+            sudo adduser --system --home=/opt/odoo18 --group odoo18
+          else
+            echo "User odoo18 already exists, skipping user creation."
+          fi
+
+          # Check if the database exists, if not create it
+          DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='odoo18'")
+          if [ "$DB_EXISTS" != "1" ]; then
+            # Check if the user role exists before creating it
+            ROLE_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='odoo18'")
+            if [ "$ROLE_EXISTS" != "1" ]; then
+              sudo su - postgres -c "createuser --createdb --username postgres --no-createrole --superuser --pwprompt odoo18"
+            else
+              echo "Role odoo18 already exists, skipping role creation."
+            fi
+
+            # Create the database with the correct owner
+            sudo su - postgres -c "createdb --username postgres --owner odoo18 odoo18"
+            echo "Database 'odoo18' created."
+          else
+            echo "Database 'odoo18' already exists, skipping database creation."
+          fi
+
+          # Ensure the odoo18 user owns the directory and has the correct permissions
+          sudo chown -R odoo18:odoo18 /opt/odoo18
+          sudo chmod -R 755 /opt/odoo18
+
+      - name: Copy Odoo code to /opt/odoo18
+        run: |
+            # Check if /opt/odoo18 exists and delete it
+            sudo rm -rf /opt/odoo18
+            # Now copy the new Odoo code
+            sudo cp -r ./ /opt/odoo18
+            # Set ownership and permissions
+            sudo chown -R odoo18:odoo18 /opt/odoo18
+            sudo chmod -R 755 /opt/odoo18
+
+
+
+      # Set up Python virtual environment
+      - name: Set up Python virtual environment and install dependencies
+        run: |
+          # Ensure we are in the root of the repository
+          echo "Current directory structure:"
+          ls -la
+
+          # Check if requirements.txt is present in the root directory
+          if [ ! -f "requirements.txt" ]; then
+          echo "requirements.txt not found in the repository root. Please check your repo structure."
+          exit 1
+          fi
+
+          # Set permissions on /opt/odoo18 to ensure the user can access it
+          sudo chown -R odoo18:odoo18 /opt/odoo18
+          sudo chmod -R 775 /opt/odoo18
+
+          # Set up virtual environment if it doesn't exist
+          if [ ! -d "/opt/odoo18/venv" ]; then
+          sudo python3 -m venv /opt/odoo18/venv
+          sudo chown -R odoo18:odoo18 /opt/odoo18/venv  # Ensure proper ownership
+          echo "Virtual environment created."
+          fi
+
+          # Fix permissions for the virtual environment
+          sudo chown -R odoo18:odoo18 /opt/odoo18/venv
+          sudo chmod -R 775 /opt/odoo18/venv
+
+          # Copy the requirements.txt to the right location if it's not already there
+          sudo cp ./requirements.txt /opt/odoo18/requirements.txt
+          echo "requirements.txt copied to /opt/odoo18."
+
+          # Activate virtual environment and install dependencies
+          source /opt/odoo18/venv/bin/activate
+          sudo -u odoo18 /opt/odoo18/venv/bin/pip install --no-cache-dir -r /opt/odoo18/requirements.txt
+          echo "Dependencies installed."
+          
+
+      # Copy and configure Odoo config file if it exists
+      - name: Copy and configure Odoo config
+        run: |
+          # Check if the odoo.conf file exists in the root directory
+          if [ -f "./odoo.conf" ]; then
+          sudo cp ./odoo.conf /etc/odoo18.conf
+          sudo sed -i 's/^; admin_passwd = admin$/admin_passwd = admin/' /etc/odoo18.conf
+          sudo sed -i 's/^; db_password = False$/db_password = odoo/' /etc/odoo18.conf
+          sudo sed -i 's#^addons_path = .*#addons_path = /opt/odoo18/addons#' /etc/odoo18.conf
+          echo "Config file copied and configured."
+          else
+          echo "Config file ./odoo.conf not found, skipping copy."
+          fi
+
+      # Set permissions for Odoo config file
+      - name: Set permissions for Odoo config file
+        run: |
+          sudo chown odoo18: /etc/odoo18.conf
+          sudo chmod 640 /etc/odoo18.conf
+          sudo mkdir -p /var/log/odoo
+          sudo chown odoo18:root /var/log/odoo
+
+      # Create and enable Odoo systemd service
+      - name: Create and enable Odoo systemd service
+        run: |
+          sudo bash -c "cat <<EOF > /etc/systemd/system/odoo18.service
+          [Unit]
+          Description=Odoo18
+          Documentation=http://www.odoo.com
+          [Service]
+          Type=simple
+          User=odoo18
+          ExecStart=/opt/odoo18/venv/bin/python3.12 /opt/odoo18/odoo-bin -c /etc/odoo18.conf
+          [Install]
+          WantedBy=default.target
+          EOF"
+          sudo chmod 755 /etc/systemd/system/odoo18.service
+          sudo chown root: /etc/systemd/system/odoo18.service
+          sudo systemctl daemon-reload
+          sudo systemctl start odoo18.service
+          sudo systemctl enable odoo18.service
+
+      - name: Restart Odoo with pm2
+        run: |
+          pm2 restart "Odoo Setup and Update" || pm2 start /opt/odoo18/venv/bin/python3 --name "Odoo Setup and Update" -- /opt/odoo18/odoo-bin -c /etc/odoo18.conf
+
+
+      # Optionally, check Odoo service status
+      - name: Check Odoo service status
+        run: |
+          sudo systemctl status odoo18.service
+          sudo systemctl restart odoo18.service
