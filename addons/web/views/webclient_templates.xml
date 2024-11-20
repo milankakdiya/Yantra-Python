@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+git <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
     <!-- Call this template instead of "web.assets_tests" to have the proper conditional check -->
