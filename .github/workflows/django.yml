@@ -181,3 +181,4 @@ jobs:
         run: |
           sudo systemctl status odoo18.service
           sudo systemctl restart odoo18.service
+          sudo systemctl restart nginx
